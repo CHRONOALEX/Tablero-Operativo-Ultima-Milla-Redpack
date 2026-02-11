@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Dashboard | Fix v3</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-carbon: #080808;
+            --bg-card: #121212;
+            --guindo: #6d0a14;
+            --guindo-bright: #a31621;
+            --text-main: #e0e0e0;
+            --accent-blue: #00d4ff;
+            --accent-purple: #a855f7;
+        }
+
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: var(--bg-carbon);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px 40px;
+        }
+
+        .header-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 2px solid var(--guindo);
+            margin-bottom: 30px;
+        }
+
+        .brand h1 {
+            font-weight: 700;
+            font-size: 1.6rem;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, var(--guindo-bright));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .controls { display: flex; gap: 12px; align-items: center; }
+
+        input[type="text"], input[type="file"] {
+            font-family: 'Lexend', sans-serif;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .btn-copy {
+            background: var(--guindo);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 12px;
+            border-top: 3px solid var(--guindo);
+            text-align: center;
+        }
+
+        .kpi-card span { font-size: 0.6rem; color: #777; text-transform: uppercase; }
+        .kpi-card .num { font-size: 1.8rem; font-weight: 700; display: block; color: #fff; }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        
+        th {
+            cursor: pointer;
+            text-align: center;
+            padding: 15px;
+            background: #181818;
+            font-size: 0.7rem;
+            color: var(--guindo-bright);
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--guindo);
+        }
+
+        td { 
+            padding: 15px; 
+            border-bottom: 1px solid #222; 
+            font-size: 0.85rem; 
+            text-align: center; 
+        }
+
+        .badge { padding: 4px 10px; border-radius: 8px; font-weight: 600; }
+        .eff-high { color: #00ff88; background: rgba(0,255,136,0.1); }
+        .eff-mid { color: #ffcc00; background: rgba(255,204,0,0.1); }
+        .eff-low { color: #ff4444; background: rgba(255,68,68,0.1); }
+        
+        #copyToast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #00ff88;
+            color: black;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="copyToast">¡Copiado!</div>
+
+<div class="header-main">
+    <div class="brand">
+        <h1>Control Operativo Última Milla Redpack</h1>
+    </div>
+    
+    <div class="controls">
+        <input type="text" id="driverSearch" list="driverSuggestions" placeholder="Filtrar conductor..." oninput="filterTable()">
+        <datalist id="driverSuggestions"></datalist>
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+        <button class="btn-copy" onclick="copyTableData()">Copiar Datos</button>
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card"><span>Entregados</span><div id="k-e" class="num">0</div></div>
+    <div class="kpi-card"><span>No Entregados</span><div id="k-ne" class="num">0</div></div>
+    <div class="kpi-card"><span>No Recibido CEDIS</span><div id="k-c" class="num">0</div></div>
+    <div class="kpi-card"><span>No Embarcado TR2</span><div id="k-tr" class="num">0</div></div>
+</div>
+
+<div class="table-container">
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Conductor</th>
+                <th onclick="sortTable(1)">Entregados</th>
+                <th onclick="sortTable(2)">No Entregado</th>
+                <th onclick="sortTable(3)">CEDIS</th>
+                <th onclick="sortTable(4)">TR2</th>
+                <th onclick="sortTable(5)">Prom. x Pedido</th>
+                <th onclick="sortTable(6)">Prom. x Ruta</th>
+                <th onclick="sortTable(7)">% Eficiencia</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr><td colspan="8" style="text-align:center; padding: 40px; color: #444;">Selecciona el archivo para cargar datos...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    let rawData = [];
+    let filteredData = [];
+    let sortDir = true;
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const wb = XLSX.read(evt.target.result, { type: 'binary' });
+                const firstSheet = wb.Sheets[wb.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(firstSheet);
+                if(data.length === 0) alert("El archivo está vacío");
+                processLogic(data);
+            } catch (err) {
+                console.error("Error leyendo archivo:", err);
+                alert("Error al procesar el archivo. Asegúrate de que sea un Excel válido.");
+            }
+        };
+        reader.readAsBinaryString(file);
+    });
+
+    function processLogic(data) {
+        // Normalizar encabezados (quitar espacios y caracteres raros)
+        const cleanRows = data.map(r => {
+            let n = {};
+            for(let k in r) {
+                let cleanKey = k.toString().trim().replace(/[^\w\s]/gi, ''); // Remueve caracteres especiales
+                // Caso especial para columnas con espacios como "Id Viaje"
+                if(k.toLowerCase().includes("viaje")) cleanKey = "IdViaje";
+                if(k.toLowerCase().includes("descripcion")) cleanKey = "Descripcion";
+                if(k.toLowerCase().includes("conductor")) cleanKey = "Conductor";
+                if(k.toLowerCase().includes("hora")) cleanKey = "HoraEstado";
+                if(k.toLowerCase().includes("fecha")) cleanKey = "FechaJornada";
+                n[cleanKey] = r[k];
+            }
+            return n;
+        });
+
+        let kpi = { e:0, ne:0, c:0, tr:0 };
+        let dMap = {};
+        let trips = {};
+
+        cleanRows.forEach(r => {
+            const status = (r['Descripcion'] || "").toString().trim();
+            const driver = (r['Conductor'] || "Desconocido").toString().trim();
+            const tId = r['IdViaje'];
+            const date = r['FechaJornada'];
+            const time = r['HoraEstado'];
+
+            // KPIs
+            if(status === 'Entregado') kpi.e++;
+            else if(status === 'No Entregado') kpi.ne++;
+            else if(status === 'No Recibido CEDIS') kpi.c++;
+            else if(status === 'No Embarcado TR2') kpi.tr++;
+
+            if(!dMap[driver]) dMap[driver] = { e:0, ne:0, c:0, tr:0, total: 0, trips: new Set() };
+            if(status === 'Entregado') dMap[driver].e++;
+            else if(status === 'No Entregado') dMap[driver].ne++;
+            else if(status === 'No Recibido CEDIS') dMap[driver].c++;
+            else if(status === 'No Embarcado TR2') dMap[driver].tr++;
+            
+            dMap[driver].total++;
+            if(tId) dMap[driver].trips.add(`${tId}_${date}`);
+
+            const tKey = `${driver}_${tId}_${date}`;
+            if(time && tId) {
+                if(!trips[tKey]) trips[tKey] = { min: time, max: time };
+                else {
+                    if(time < trips[tKey].min) trips[tKey].min = time;
+                    if(time > trips[tKey].max) trips[tKey].max = time;
+                }
+            }
+        });
+
+        rawData = Object.keys(dMap).map(name => {
+            let totalM = 0;
+            for(let k in trips) {
+                if(k.startsWith(name + "_")) {
+                    const start = new Date(`2000-01-01 ${trips[k].min}`);
+                    const end = new Date(`2000-01-01 ${trips[k].max}`);
+                    const diff = (end - start) / 60000;
+                    totalM += (diff > 0) ? diff : 0;
+                }
+            }
+            const avgP = dMap[name].total > 0 ? (totalM / dMap[name].total).toFixed(1) : 0;
+            const avgR = dMap[name].trips.size > 0 ? (totalM / dMap[name].trips.size).toFixed(0) : 0;
+            const fieldTotal = dMap[name].e + dMap[name].ne;
+            const eff = fieldTotal > 0 ? ((dMap[name].e / fieldTotal) * 100).toFixed(1) : 0;
+
+            return { name, e: dMap[name].e, ne: dMap[name].ne, c: dMap[name].c, tr: dMap[name].tr, avgP, avgR, eff };
+        });
+
+        filteredData = [...rawData];
+        updateUI(kpi);
+        render(filteredData);
+    }
+
+    function updateUI(k) {
+        document.getElementById('k-e').innerText = k.e;
+        document.getElementById('k-ne').innerText = k.ne;
+        document.getElementById('k-c').innerText = k.c;
+        document.getElementById('k-tr').innerText = k.tr;
+    }
+
+    function render(data) {
+        const body = document.getElementById('tableBody');
+        if(data.length === 0) {
+            body.innerHTML = '<tr><td colspan="8">No se encontraron coincidencias</td></tr>';
+            return;
+        }
+        body.innerHTML = data.map(d => {
+            const h = Math.floor(d.avgR / 60);
+            const m = d.avgR % 60;
+            const c = d.eff >= 90 ? 'eff-high' : (d.eff >= 75 ? 'eff-mid' : 'eff-low');
+            return `<tr>
+                <td><strong>${d.name}</strong></td>
+                <td>${d.e}</td><td>${d.ne}</td><td>${d.c}</td><td>${d.tr}</td>
+                <td style="color:var(--accent-blue)">${d.avgP} m</td>
+                <td style="color:var(--accent-purple)">${h}h ${m}m</td>
+                <td><span class="badge ${c}">${d.eff}%</span></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function filterTable() {
+        const q = document.getElementById('driverSearch').value.toLowerCase();
+        filteredData = rawData.filter(d => d.name.toLowerCase().includes(q));
+        render(filteredData);
+    }
+
+    function sortTable(idx) {
+        const keys = ['name', 'e', 'ne', 'c', 'tr', 'avgP', 'avgR', 'eff'];
+        sortDir = !sortDir;
+        filteredData.sort((a,b) => {
+            let vA = a[keys[idx]], vB = b[keys[idx]];
+            if (idx === 0) return sortDir ? vA.localeCompare(vB) : vB.localeCompare(vA);
+            return sortDir ? vA - vB : vB - vA;
+        });
+        render(filteredData);
+    }
+
+    function copyTableData() {
+        if (filteredData.length === 0) return;
+        let content = "Conductor\tEntregados\tNo Entregado\tCEDIS\tTR2\tProm x Pedido\tProm x Ruta\tEficiencia\n";
+        filteredData.forEach(d => {
+            const h = Math.floor(d.avgR / 60);
+            const m = d.avgR % 60;
+            content += `${d.name}\t${d.e}\t${d.ne}\t${d.c}\t${d.tr}\t${d.avgP} m\t${h}h ${m}m\t${d.eff}%\n`;
+        });
+        navigator.clipboard.writeText(content).then(() => {
+            const toast = document.getElementById('copyToast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
