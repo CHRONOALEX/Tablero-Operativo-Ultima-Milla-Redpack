@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistics Dashboard | Fix v3</title>
+    <title>Logistics Dashboard | Fix v3.1</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -16,6 +16,7 @@
             --text-main: #e0e0e0;
             --accent-blue: #00d4ff;
             --accent-purple: #a855f7;
+            --accent-green: #00ff88;
         }
 
         body {
@@ -68,11 +69,14 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: 0.3s;
         }
+
+        .btn-copy:hover { background: var(--guindo-bright); }
 
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(5, 1fr); /* Ajustado a 5 columnas */
             gap: 15px;
             margin-bottom: 30px;
         }
@@ -83,16 +87,19 @@
             border-radius: 12px;
             border-top: 3px solid var(--guindo);
             text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
-        .kpi-card span { font-size: 0.6rem; color: #777; text-transform: uppercase; }
-        .kpi-card .num { font-size: 1.8rem; font-weight: 700; display: block; color: #fff; }
+        .kpi-card span { font-size: 0.65rem; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-card .num { font-size: 1.8rem; font-weight: 700; display: block; color: #fff; margin-top: 5px; }
+        .kpi-card.special { border-top-color: var(--accent-blue); }
 
         .table-container {
             background: var(--bg-card);
             border-radius: 16px;
             padding: 20px;
             overflow-x: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         table { width: 100%; border-collapse: collapse; }
@@ -116,7 +123,7 @@
         }
 
         .badge { padding: 4px 10px; border-radius: 8px; font-weight: 600; }
-        .eff-high { color: #00ff88; background: rgba(0,255,136,0.1); }
+        .eff-high { color: var(--accent-green); background: rgba(0,255,136,0.1); }
         .eff-mid { color: #ffcc00; background: rgba(255,204,0,0.1); }
         .eff-low { color: #ff4444; background: rgba(255,68,68,0.1); }
         
@@ -124,18 +131,20 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #00ff88;
+            background: var(--accent-green);
             color: black;
-            padding: 10px 20px;
+            padding: 12px 25px;
             border-radius: 8px;
             font-weight: 700;
             display: none;
+            z-index: 100;
+            box-shadow: 0 5px 15px rgba(0,255,136,0.3);
         }
     </style>
 </head>
 <body>
 
-<div id="copyToast">¡Copiado!</div>
+<div id="copyToast">¡Datos copiados al portapapeles!</div>
 
 <div class="header-main">
     <div class="brand">
@@ -143,14 +152,16 @@
     </div>
     
     <div class="controls">
-        <input type="text" id="driverSearch" list="driverSuggestions" placeholder="Filtrar conductor..." oninput="filterTable()">
+        <input type="text" id="driverSearch" list="driverSuggestions" placeholder="Buscar conductor..." oninput="filterTable()">
         <datalist id="driverSuggestions"></datalist>
+        
         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
-        <button class="btn-copy" onclick="copyTableData()">Copiar Datos</button>
+        <button class="btn-copy" onclick="copyTableData()">Copiar Tabla</button>
     </div>
 </div>
 
 <div class="kpi-grid">
+    <div class="kpi-card special"><span>Total Conductores</span><div id="k-drivers" class="num">0</div></div>
     <div class="kpi-card"><span>Entregados</span><div id="k-e" class="num">0</div></div>
     <div class="kpi-card"><span>No Entregados</span><div id="k-ne" class="num">0</div></div>
     <div class="kpi-card"><span>No Recibido CEDIS</span><div id="k-c" class="num">0</div></div>
@@ -196,19 +207,17 @@
                 processLogic(data);
             } catch (err) {
                 console.error("Error leyendo archivo:", err);
-                alert("Error al procesar el archivo. Asegúrate de que sea un Excel válido.");
+                alert("Error al procesar el archivo.");
             }
         };
         reader.readAsBinaryString(file);
     });
 
     function processLogic(data) {
-        // Normalizar encabezados (quitar espacios y caracteres raros)
         const cleanRows = data.map(r => {
             let n = {};
             for(let k in r) {
-                let cleanKey = k.toString().trim().replace(/[^\w\s]/gi, ''); // Remueve caracteres especiales
-                // Caso especial para columnas con espacios como "Id Viaje"
+                let cleanKey = k.toString().trim().replace(/[^\w\s]/gi, '');
                 if(k.toLowerCase().includes("viaje")) cleanKey = "IdViaje";
                 if(k.toLowerCase().includes("descripcion")) cleanKey = "Descripcion";
                 if(k.toLowerCase().includes("conductor")) cleanKey = "Conductor";
@@ -219,7 +228,7 @@
             return n;
         });
 
-        let kpi = { e:0, ne:0, c:0, tr:0 };
+        let kpi = { e:0, ne:0, c:0, tr:0, drivers: 0 };
         let dMap = {};
         let trips = {};
 
@@ -230,13 +239,13 @@
             const date = r['FechaJornada'];
             const time = r['HoraEstado'];
 
-            // KPIs
             if(status === 'Entregado') kpi.e++;
             else if(status === 'No Entregado') kpi.ne++;
             else if(status === 'No Recibido CEDIS') kpi.c++;
             else if(status === 'No Embarcado TR2') kpi.tr++;
 
             if(!dMap[driver]) dMap[driver] = { e:0, ne:0, c:0, tr:0, total: 0, trips: new Set() };
+            
             if(status === 'Entregado') dMap[driver].e++;
             else if(status === 'No Entregado') dMap[driver].ne++;
             else if(status === 'No Recibido CEDIS') dMap[driver].c++;
@@ -254,6 +263,8 @@
                 }
             }
         });
+
+        kpi.drivers = Object.keys(dMap).length;
 
         rawData = Object.keys(dMap).map(name => {
             let totalM = 0;
@@ -275,14 +286,23 @@
 
         filteredData = [...rawData];
         updateUI(kpi);
+        updateSuggestions(rawData); // Actualizar lista de sugerencias
         render(filteredData);
     }
 
     function updateUI(k) {
+        document.getElementById('k-drivers').innerText = k.drivers;
         document.getElementById('k-e').innerText = k.e;
         document.getElementById('k-ne').innerText = k.ne;
         document.getElementById('k-c').innerText = k.c;
         document.getElementById('k-tr').innerText = k.tr;
+    }
+
+    // Nueva función para llenar el datalist de sugerencias
+    function updateSuggestions(data) {
+        const list = document.getElementById('driverSuggestions');
+        const names = data.map(d => d.name).sort();
+        list.innerHTML = names.map(n => `<option value="${n}">`).join('');
     }
 
     function render(data) {
