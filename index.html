@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistics Dashboard | Fix v3.1</title>
+    <title>Logistics Dashboard | Matrix Pro v3.4</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -17,6 +17,7 @@
             --accent-blue: #00d4ff;
             --accent-purple: #a855f7;
             --accent-green: #00ff88;
+            --accent-orange: #ff8800;
         }
 
         body {
@@ -46,6 +47,32 @@
             text-transform: uppercase;
         }
 
+        .view-selector {
+            display: flex;
+            background: #1a1a1a;
+            padding: 5px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            gap: 5px;
+            width: fit-content;
+        }
+
+        .view-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #777;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .view-btn.active {
+            background: var(--guindo);
+            color: white;
+        }
+
         .controls { display: flex; gap: 12px; align-items: center; }
 
         input[type="text"], input[type="file"] {
@@ -69,14 +96,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: 0.3s;
         }
-
-        .btn-copy:hover { background: var(--guindo-bright); }
 
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr); /* Ajustado a 5 columnas */
+            grid-template-columns: repeat(5, 1fr);
             gap: 15px;
             margin-bottom: 30px;
         }
@@ -87,12 +111,10 @@
             border-radius: 12px;
             border-top: 3px solid var(--guindo);
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
-        .kpi-card span { font-size: 0.65rem; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-card span { font-size: 0.65rem; color: #777; text-transform: uppercase; }
         .kpi-card .num { font-size: 1.8rem; font-weight: 700; display: block; color: #fff; margin-top: 5px; }
-        .kpi-card.special { border-top-color: var(--accent-blue); }
 
         .table-container {
             background: var(--bg-card);
@@ -100,6 +122,7 @@
             padding: 20px;
             overflow-x: auto;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 70vh;
         }
 
         table { width: 100%; border-collapse: collapse; }
@@ -107,25 +130,35 @@
         th {
             cursor: pointer;
             text-align: center;
-            padding: 15px;
+            padding: 12px;
             background: #181818;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--guindo-bright);
             text-transform: uppercase;
             border-bottom: 2px solid var(--guindo);
+            min-width: 100px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
+        th:hover { background: #222; }
+
         td { 
-            padding: 15px; 
+            padding: 12px; 
             border-bottom: 1px solid #222; 
-            font-size: 0.85rem; 
+            font-size: 0.8rem; 
             text-align: center; 
         }
 
+        /* Badges de eficiencia */
         .badge { padding: 4px 10px; border-radius: 8px; font-weight: 600; }
         .eff-high { color: var(--accent-green); background: rgba(0,255,136,0.1); }
         .eff-mid { color: #ffcc00; background: rgba(255,204,0,0.1); }
         .eff-low { color: #ff4444; background: rgba(255,68,68,0.1); }
+
+        .reason-col { color: var(--accent-orange); font-weight: 600; }
+        .zero-val { color: #333; }
         
         #copyToast {
             position: fixed;
@@ -138,52 +171,44 @@
             font-weight: 700;
             display: none;
             z-index: 100;
-            box-shadow: 0 5px 15px rgba(0,255,136,0.3);
         }
     </style>
 </head>
 <body>
 
-<div id="copyToast">¡Datos copiados al portapapeles!</div>
+<div id="copyToast">¡Datos copiados!</div>
 
 <div class="header-main">
     <div class="brand">
-        <h1>Control Operativo Última Milla Redpack</h1>
+        <h1>Operación Última Milla Redpack</h1>
     </div>
     
     <div class="controls">
         <input type="text" id="driverSearch" list="driverSuggestions" placeholder="Buscar conductor..." oninput="filterTable()">
         <datalist id="driverSuggestions"></datalist>
-        
         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
-        <button class="btn-copy" onclick="copyTableData()">Copiar Tabla</button>
+        <button class="btn-copy" onclick="copyTableData()">Copiar Datos</button>
     </div>
 </div>
 
+<div class="view-selector">
+    <button class="view-btn active" id="btnGen" onclick="switchView('general')">Tablero General</button>
+    <button class="view-btn" id="btnMat" onclick="switchView('exceptions')">Matriz de No Entregados</button>
+</div>
+
 <div class="kpi-grid">
-    <div class="kpi-card special"><span>Total Conductores</span><div id="k-drivers" class="num">0</div></div>
+    <div class="kpi-card" style="border-top-color: var(--accent-blue)"><span>Conductores</span><div id="k-drivers" class="num">0</div></div>
     <div class="kpi-card"><span>Entregados</span><div id="k-e" class="num">0</div></div>
     <div class="kpi-card"><span>No Entregados</span><div id="k-ne" class="num">0</div></div>
-    <div class="kpi-card"><span>No Recibido CEDIS</span><div id="k-c" class="num">0</div></div>
-    <div class="kpi-card"><span>No Embarcado TR2</span><div id="k-tr" class="num">0</div></div>
+    <div class="kpi-card"><span>CEDIS</span><div id="k-c" class="num">0</div></div>
+    <div class="kpi-card"><span>TR2</span><div id="k-tr" class="num">0</div></div>
 </div>
 
 <div class="table-container">
     <table id="mainTable">
-        <thead>
-            <tr>
-                <th onclick="sortTable(0)">Conductor</th>
-                <th onclick="sortTable(1)">Entregados</th>
-                <th onclick="sortTable(2)">No Entregado</th>
-                <th onclick="sortTable(3)">CEDIS</th>
-                <th onclick="sortTable(4)">TR2</th>
-                <th onclick="sortTable(5)">Prom. x Pedido</th>
-                <th onclick="sortTable(6)">Prom. x Ruta</th>
-                <th onclick="sortTable(7)">% Eficiencia</th>
-            </tr>
-        </thead>
+        <thead id="tableHead"></thead>
         <tbody id="tableBody">
-            <tr><td colspan="8" style="text-align:center; padding: 40px; color: #444;">Selecciona el archivo para cargar datos...</td></tr>
+            <tr><td colspan="20" style="padding: 40px; color: #444;">Esperando carga de archivo...</td></tr>
         </tbody>
     </table>
 </div>
@@ -191,170 +216,171 @@
 <script>
     let rawData = [];
     let filteredData = [];
-    let sortDir = true;
+    let globalReasons = [];
+    let currentView = 'general';
+    let sortConfig = { key: 'name', dir: true };
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if(!file) return;
-
         const reader = new FileReader();
         reader.onload = (evt) => {
-            try {
-                const wb = XLSX.read(evt.target.result, { type: 'binary' });
-                const firstSheet = wb.Sheets[wb.SheetNames[0]];
-                const data = XLSX.utils.sheet_to_json(firstSheet);
-                if(data.length === 0) alert("El archivo está vacío");
-                processLogic(data);
-            } catch (err) {
-                console.error("Error leyendo archivo:", err);
-                alert("Error al procesar el archivo.");
-            }
+            const wb = XLSX.read(evt.target.result, { type: 'binary' });
+            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            processLogic(data);
         };
         reader.readAsBinaryString(file);
     });
 
     function processLogic(data) {
-        const cleanRows = data.map(r => {
-            let n = {};
-            for(let k in r) {
-                let cleanKey = k.toString().trim().replace(/[^\w\s]/gi, '');
-                if(k.toLowerCase().includes("viaje")) cleanKey = "IdViaje";
-                if(k.toLowerCase().includes("descripcion")) cleanKey = "Descripcion";
-                if(k.toLowerCase().includes("conductor")) cleanKey = "Conductor";
-                if(k.toLowerCase().includes("hora")) cleanKey = "HoraEstado";
-                if(k.toLowerCase().includes("fecha")) cleanKey = "FechaJornada";
-                n[cleanKey] = r[k];
+        const dMap = {};
+        const reasonsSet = new Set();
+        let kpi = { e:0, ne:0, c:0, tr:0 };
+
+        data.forEach(r => {
+            let row = {};
+            for(let key in r) {
+                let k = key.toLowerCase();
+                if(k.includes("conductor")) row.driver = r[key];
+                if(k.includes("descripcion")) row.status = r[key];
+                if(k.includes("motivo")) row.reason = r[key];
             }
-            return n;
+
+            const name = (row.driver || "Desconocido").toString().trim();
+            const status = (row.status || "").toString().trim();
+            const reason = (row.reason || "Sin Especificar").toString().trim();
+
+            if(!dMap[name]) dMap[name] = { name, e:0, ne:0, c:0, tr:0, eff:0, reasons: {} };
+
+            if(status === 'Entregado') { dMap[name].e++; kpi.e++; }
+            else if(status === 'No Entregado') { 
+                dMap[name].ne++; kpi.ne++;
+                dMap[name].reasons[reason] = (dMap[name].reasons[reason] || 0) + 1;
+                reasonsSet.add(reason);
+            }
+            else if(status === 'No Recibido CEDIS') { dMap[name].c++; kpi.c++; }
+            else if(status === 'No Embarcado TR2') { dMap[name].tr++; kpi.tr++; }
         });
 
-        let kpi = { e:0, ne:0, c:0, tr:0, drivers: 0 };
-        let dMap = {};
-        let trips = {};
-
-        cleanRows.forEach(r => {
-            const status = (r['Descripcion'] || "").toString().trim();
-            const driver = (r['Conductor'] || "Desconocido").toString().trim();
-            const tId = r['IdViaje'];
-            const date = r['FechaJornada'];
-            const time = r['HoraEstado'];
-
-            if(status === 'Entregado') kpi.e++;
-            else if(status === 'No Entregado') kpi.ne++;
-            else if(status === 'No Recibido CEDIS') kpi.c++;
-            else if(status === 'No Embarcado TR2') kpi.tr++;
-
-            if(!dMap[driver]) dMap[driver] = { e:0, ne:0, c:0, tr:0, total: 0, trips: new Set() };
-            
-            if(status === 'Entregado') dMap[driver].e++;
-            else if(status === 'No Entregado') dMap[driver].ne++;
-            else if(status === 'No Recibido CEDIS') dMap[driver].c++;
-            else if(status === 'No Embarcado TR2') dMap[driver].tr++;
-            
-            dMap[driver].total++;
-            if(tId) dMap[driver].trips.add(`${tId}_${date}`);
-
-            const tKey = `${driver}_${tId}_${date}`;
-            if(time && tId) {
-                if(!trips[tKey]) trips[tKey] = { min: time, max: time };
-                else {
-                    if(time < trips[tKey].min) trips[tKey].min = time;
-                    if(time > trips[tKey].max) trips[tKey].max = time;
-                }
-            }
-        });
-
-        kpi.drivers = Object.keys(dMap).length;
-
-        rawData = Object.keys(dMap).map(name => {
-            let totalM = 0;
-            for(let k in trips) {
-                if(k.startsWith(name + "_")) {
-                    const start = new Date(`2000-01-01 ${trips[k].min}`);
-                    const end = new Date(`2000-01-01 ${trips[k].max}`);
-                    const diff = (end - start) / 60000;
-                    totalM += (diff > 0) ? diff : 0;
-                }
-            }
-            const avgP = dMap[name].total > 0 ? (totalM / dMap[name].total).toFixed(1) : 0;
-            const avgR = dMap[name].trips.size > 0 ? (totalM / dMap[name].trips.size).toFixed(0) : 0;
-            const fieldTotal = dMap[name].e + dMap[name].ne;
-            const eff = fieldTotal > 0 ? ((dMap[name].e / fieldTotal) * 100).toFixed(1) : 0;
-
-            return { name, e: dMap[name].e, ne: dMap[name].ne, c: dMap[name].c, tr: dMap[name].tr, avgP, avgR, eff };
+        globalReasons = Array.from(reasonsSet).sort();
+        
+        rawData = Object.values(dMap).map(d => {
+            const totalField = d.e + d.ne;
+            d.eff = totalField > 0 ? parseFloat(((d.e / totalField) * 100).toFixed(1)) : 0;
+            return d;
         });
 
         filteredData = [...rawData];
-        updateUI(kpi);
-        updateSuggestions(rawData); // Actualizar lista de sugerencias
-        render(filteredData);
+        document.getElementById('k-drivers').innerText = rawData.length;
+        document.getElementById('k-e').innerText = kpi.e;
+        document.getElementById('k-ne').innerText = kpi.ne;
+        document.getElementById('k-c').innerText = kpi.c;
+        document.getElementById('k-tr').innerText = kpi.tr;
+        
+        updateSuggestions();
+        render();
     }
 
-    function updateUI(k) {
-        document.getElementById('k-drivers').innerText = k.drivers;
-        document.getElementById('k-e').innerText = k.e;
-        document.getElementById('k-ne').innerText = k.ne;
-        document.getElementById('k-c').innerText = k.c;
-        document.getElementById('k-tr').innerText = k.tr;
+    function switchView(view) {
+        currentView = view;
+        document.getElementById('btnGen').classList.toggle('active', view === 'general');
+        document.getElementById('btnMat').classList.toggle('active', view === 'exceptions');
+        render();
     }
 
-    // Nueva función para llenar el datalist de sugerencias
-    function updateSuggestions(data) {
-        const list = document.getElementById('driverSuggestions');
-        const names = data.map(d => d.name).sort();
-        list.innerHTML = names.map(n => `<option value="${n}">`).join('');
+    function sortData(key, isReason = false) {
+        if (sortConfig.key === key) sortConfig.dir = !sortConfig.dir;
+        else { sortConfig.key = key; sortConfig.dir = true; }
+
+        filteredData.sort((a, b) => {
+            let valA, valB;
+            if (isReason) {
+                valA = a.reasons[key] || 0;
+                valB = b.reasons[key] || 0;
+            } else {
+                valA = a[key];
+                valB = b[key];
+            }
+
+            if (typeof valA === 'string') {
+                return sortConfig.dir ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+            return sortConfig.dir ? valA - valB : valB - valA;
+        });
+        render();
     }
 
-    function render(data) {
+    function render() {
+        const head = document.getElementById('tableHead');
         const body = document.getElementById('tableBody');
-        if(data.length === 0) {
-            body.innerHTML = '<tr><td colspan="8">No se encontraron coincidencias</td></tr>';
-            return;
-        }
-        body.innerHTML = data.map(d => {
-            const h = Math.floor(d.avgR / 60);
-            const m = d.avgR % 60;
-            const c = d.eff >= 90 ? 'eff-high' : (d.eff >= 75 ? 'eff-mid' : 'eff-low');
-            return `<tr>
-                <td><strong>${d.name}</strong></td>
-                <td>${d.e}</td><td>${d.ne}</td><td>${d.c}</td><td>${d.tr}</td>
-                <td style="color:var(--accent-blue)">${d.avgP} m</td>
-                <td style="color:var(--accent-purple)">${h}h ${m}m</td>
-                <td><span class="badge ${c}">${d.eff}%</span></td>
+        
+        if(currentView === 'general') {
+            head.innerHTML = `<tr>
+                <th onclick="sortData('name')">Conductor ↕</th>
+                <th onclick="sortData('e')">Entregados ↕</th>
+                <th onclick="sortData('ne')">No Entregado ↕</th>
+                <th onclick="sortData('c')">CEDIS ↕</th>
+                <th onclick="sortData('tr')">TR2 ↕</th>
+                <th onclick="sortData('eff')">% Eficiencia ↕</th>
             </tr>`;
-        }).join('');
+            
+            body.innerHTML = filteredData.map(d => {
+                const colorClass = d.eff >= 90 ? 'eff-high' : (d.eff >= 75 ? 'eff-mid' : 'eff-low');
+                return `<tr>
+                    <td><strong>${d.name}</strong></td>
+                    <td>${d.e}</td><td>${d.ne}</td><td>${d.c}</td><td>${d.tr}</td>
+                    <td><span class="badge ${colorClass}">${d.eff}%</span></td>
+                </tr>`;
+            }).join('');
+        } else {
+            let headHtml = `<tr>
+                <th onclick="sortData('name')" style="position:sticky; left:0; background:#181818; z-index:11">Conductor ↕</th>
+                <th onclick="sortData('ne')" style="background:#222">TOTAL NE ↕</th>`;
+            globalReasons.forEach(r => {
+                headHtml += `<th onclick="sortData('${r}', true)">${r} ↕</th>`;
+            });
+            headHtml += `</tr>`;
+            head.innerHTML = headHtml;
+
+            body.innerHTML = filteredData.filter(d => d.ne > 0).map(d => {
+                let rowHtml = `<td style="position:sticky; left:0; background:var(--bg-card); z-index:1"><strong>${d.name}</strong></td>`;
+                rowHtml += `<td style="color:var(--guindo-bright); font-weight:700">${d.ne}</td>`;
+                globalReasons.forEach(r => {
+                    const count = d.reasons[r] || 0;
+                    rowHtml += `<td class="${count > 0 ? 'reason-col' : 'zero-val'}">${count}</td>`;
+                });
+                return `<tr>${rowHtml}</tr>`;
+            }).join('');
+        }
     }
 
     function filterTable() {
         const q = document.getElementById('driverSearch').value.toLowerCase();
         filteredData = rawData.filter(d => d.name.toLowerCase().includes(q));
-        render(filteredData);
+        render();
     }
 
-    function sortTable(idx) {
-        const keys = ['name', 'e', 'ne', 'c', 'tr', 'avgP', 'avgR', 'eff'];
-        sortDir = !sortDir;
-        filteredData.sort((a,b) => {
-            let vA = a[keys[idx]], vB = b[keys[idx]];
-            if (idx === 0) return sortDir ? vA.localeCompare(vB) : vB.localeCompare(vA);
-            return sortDir ? vA - vB : vB - vA;
-        });
-        render(filteredData);
+    function updateSuggestions() {
+        document.getElementById('driverSuggestions').innerHTML = rawData.map(d => `<option value="${d.name}">`).join('');
     }
 
     function copyTableData() {
-        if (filteredData.length === 0) return;
-        let content = "Conductor\tEntregados\tNo Entregado\tCEDIS\tTR2\tProm x Pedido\tProm x Ruta\tEficiencia\n";
-        filteredData.forEach(d => {
-            const h = Math.floor(d.avgR / 60);
-            const m = d.avgR % 60;
-            content += `${d.name}\t${d.e}\t${d.ne}\t${d.c}\t${d.tr}\t${d.avgP} m\t${h}h ${m}m\t${d.eff}%\n`;
-        });
-        navigator.clipboard.writeText(content).then(() => {
-            const toast = document.getElementById('copyToast');
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 2000);
-        });
+        let content = "";
+        if(currentView === 'general') {
+            content = "Conductor\tEntregados\tNo Entregados\tEficiencia\n";
+            filteredData.forEach(d => content += `${d.name}\t${d.e}\t${d.ne}\t${d.eff}%\n`);
+        } else {
+            content = "Conductor\tTotal NE\t" + globalReasons.join("\t") + "\n";
+            filteredData.filter(d => d.ne > 0).forEach(d => {
+                let row = `${d.name}\t${d.ne}`;
+                globalReasons.forEach(r => row += `\t${d.reasons[r] || 0}`);
+                content += row + "\n";
+            });
+        }
+        navigator.clipboard.writeText(content);
+        const toast = document.getElementById('copyToast');
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2000);
     }
 </script>
 
