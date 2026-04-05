@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI's UM Redpack - Elite v2.7</title>
+    <title>KPI's UM & Malas Prácticas - Elite v3.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1"></script>
     <style>
         :root {
             --bg-color: #0f0f0f;
             --card-bg: #181818;
-            --primary: #800020; /* Guindo */
+            --primary: #800020; 
             --text-main: #e0e0e0;
             --text-dim: #b0b0b0;
             --accent-efi: #4fc3f7; 
@@ -19,86 +20,30 @@
             --border: #2d2d2d;
             --success: #00e676;
             --danger: #ff5252;
+            --warning: #e67e22;
         }
 
-        body {
-            font-family: 'Lexend', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0; padding: 0;
-            overflow-x: hidden;
-        }
+        body { font-family: 'Lexend', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; overflow-x: hidden; }
 
-        .nav-tabs {
-            display: flex;
-            background: #0a0a0a;
-            padding: 15px 30px 0;
-            border-bottom: 1px solid var(--border);
-            gap: 10px;
-            position: sticky; top: 0; z-index: 100;
-        }
-
-        .tab-btn {
-            background: transparent; border: none;
-            color: var(--text-dim); padding: 12px 25px;
-            cursor: pointer; font-family: 'Lexend', sans-serif;
-            font-size: 14px; border-radius: 8px 8px 0 0;
-            transition: all 0.3s ease;
-        }
-
-        .tab-btn.active {
-            background: var(--card-bg);
-            color: #fff;
-            border: 1px solid var(--border);
-            border-bottom: 3px solid var(--primary);
-        }
+        .nav-tabs { display: flex; background: #0a0a0a; padding: 15px 30px 0; border-bottom: 1px solid var(--border); gap: 10px; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { background: transparent; border: none; color: var(--text-dim); padding: 12px 25px; cursor: pointer; font-family: 'Lexend', sans-serif; font-size: 14px; border-radius: 8px 8px 0 0; transition: all 0.3s ease; }
+        .tab-btn.active { background: var(--card-bg); color: #fff; border: 1px solid var(--border); border-bottom: 3px solid var(--primary); }
 
         .content-section { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
         .content-section.active { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .app-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 20px; margin-bottom: 30px;
-        }
+        .app-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px; }
+        .title-wrapper h1 { margin: 0; font-size: 32px; font-weight: 800; background: linear-gradient(to right, #ffffff, #888888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .title-wrapper span { font-size: 12px; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .title-wrapper h1 {
-            margin: 0; font-size: 32px; font-weight: 800;
-            background: linear-gradient(to right, #ffffff, #888888);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-
-        .btn-upload-container { position: relative; overflow: hidden; display: inline-block; }
-        .btn-upload-custom {
-            background: #fff; color: #000; padding: 10px 25px;
-            border-radius: 6px; cursor: pointer; font-size: 14px;
-            font-weight: 800; border: none; transition: 0.2s;
-            display: inline-block;
-        }
-
-        .btn-upload-container:hover .btn-upload-custom { background: var(--primary); color: #fff; }
-        .main-file-input { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .btn-upload-custom { background: #fff; color: #000; padding: 10px 25px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 800; border: none; transition: 0.2s; display: inline-block; }
+        .btn-upload-custom:hover { background: var(--primary); color: #fff; }
 
         .main-layout { display: grid; grid-template-columns: 480px 1fr; gap: 25px; margin-bottom: 25px; }
-        .card {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 12px; padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
-
-        .card-title {
-            font-size: 16px; font-weight: 600; margin-bottom: 20px;
-            color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;
-        }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
 
         .story-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 15px; }
-        .story-item { 
-            background: #121212; padding: 15px; border-left: 4px solid var(--primary); border-radius: 4px; 
-            display: flex; flex-direction: column; justify-content: space-between; min-height: 140px;
-        }
+        .story-item { background: #121212; padding: 15px; border-left: 4px solid var(--primary); border-radius: 4px; min-height: 120px; }
         .story-item.critical { border-left-color: var(--danger); }
         .story-item.warning { border-left-color: var(--accent-vis); }
         .story-item h4 { margin: 0 0 10px 0; color: #fff; font-size: 14px; text-transform: uppercase; }
@@ -106,51 +51,56 @@
         .highlight-success { color: var(--success); font-weight: 800; }
         .highlight-danger { color: var(--danger); font-weight: 800; }
 
+        .card-header-dark { background: #121212; padding: 12px 15px; border-radius: 8px 8px 0 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; min-height: 45px; }
         .table-wrapper { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { text-align: left; padding: 14px 10px; color: var(--primary); border-bottom: 2px solid var(--border); background: #1a1a1a; cursor: pointer; user-select: none; transition: 0.2s; }
-        th:hover { background: #222; color: #fff; }
-        th.sort-asc::after { content: ' ↑'; font-size: 10px; }
-        th.sort-desc::after { content: ' ↓'; font-size: 10px; }
         
-        td { padding: 12px 10px; border-bottom: 1px solid #252525; color: var(--text-dim); }
-        tr:hover td { background: rgba(128, 0, 32, 0.05); color: #fff; }
+        /* Ajuste de visualización para evitar los puntos suspensivos */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; } 
+        th { text-align: left; padding: 12px 8px; color: var(--primary); border-bottom: 2px solid var(--border); background: #1a1a1a; cursor: pointer; white-space: nowrap; }
+        td { padding: 10px 8px; border-bottom: 1px solid #252525; color: var(--text-dim); white-space: nowrap; }
 
-        .status-pill { padding: 4px 10px; border-radius: 5px; font-weight: 800; font-size: 11px; }
+        .status-pill { padding: 4px 8px; border-radius: 5px; font-weight: 800; font-size: 11px; display: inline-block; }
         .bg-red { background: rgba(255, 82, 82, 0.15); color: var(--danger); border: 1px solid rgba(255, 82, 82, 0.3); }
         .bg-green { background: rgba(0, 230, 118, 0.15); color: var(--success); border: 1px solid rgba(0, 230, 118, 0.3); }
 
-        .chart-container { height: 400px; }
-        .search-box { flex-grow: 1; padding: 12px; background: #222; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-family: 'Lexend'; }
+        .scroll-area { height: 500px; overflow-y: auto; background: #121212; }
+        .driver-item { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; transition: 0.2s; }
+        .driver-item:hover { background: #1a1a1a; }
+        .driver-item.active { border-left: 4px solid var(--primary); background: #1a1a1a; color: #fff; }
+        .date-board { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .date-btn { padding: 6px 12px; border: 1px solid var(--border); background: #1a1a1a; color: var(--text-dim); border-radius: 20px; cursor: pointer; font-size: 11px; }
+        .date-btn.active { background: var(--primary); color: #fff; }
+        .viaje-tag { background: #333; color: var(--accent-vis); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 10px; font-weight: 800; border: 1px solid #444; }
         .btn-copy { background: var(--primary); border: none; color: #fff; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .btn-tracking { background: var(--accent-efi); color: #000; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-size: 12px; font-weight: 800; }
+        .btn-copy-purple { background: #6a1b9a !important; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="nav-tabs">
     <button class="tab-btn active" onclick="openTab('general')">Eficiencia Operativa</button>
-    <button class="tab-btn" onclick="openTab('choferes')">Reporte por Chofer</button>
+    <button class="tab-btn" onclick="openTab('choferes')">Análisis por Chofer</button>
+    <button class="tab-btn" onclick="openTab('malas-practicas')">Detección de Malas Prácticas</button>
 </div>
 
 <div id="general" class="content-section active">
     <div class="app-header">
-        <div class="title-wrapper"><span>Redpack Logistics</span><h1>KPI's Operativos</h1></div>
+        <div class="title-wrapper"><h1>KPI's Operativos</h1></div>
         <div class="header-controls" style="display: flex; gap: 15px;">
             <select id="vehicleFilter" class="btn-upload-custom" style="background: #1a1a1a; color: #fff; border: 1px solid var(--border);" onchange="applyFilter()">
                 <option value="all">Rendimiento Global</option>
                 <option value="GENQP001">QUALITYPOST</option>
                 <option value="others">ROMBO</option>
             </select>
-            <div class="btn-upload-container">
-                <button class="btn-upload-custom">Cargar Excel</button>
-                <input type="file" class="main-file-input" accept=".xlsx, .xls, .csv" />
-            </div>
+            <button class="btn-upload-custom" onclick="document.getElementById('fileInput').click()">Cargar Excel</button>
+            <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .csv" />
         </div>
     </div>
-
     <div id="mainLayout" class="main-layout" style="display: none;">
         <div class="card">
-            <div class="card-title">Resumen de Fechas <button class="btn-copy" onclick="copyTable('kpiTable')">Copiar Tabla</button></div>
+            <div class="card-header-dark">Resumen de Fechas <button class="btn-copy" onclick="copyTable('kpiTable')">Copiar</button></div>
             <div class="table-wrapper">
                 <table id="kpiTable">
                     <thead>
@@ -168,13 +118,12 @@
             </div>
         </div>
         <div class="card">
-            <div class="chart-container"><canvas id="mainChart"></canvas></div>
+            <div style="height: 300px;"><canvas id="mainChart"></canvas></div>
             <div id="storytellingContainer" style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="font-size: 18px; margin: 0; color: #fff;">📊 Análisis de Desempeño Operativo</h3>
                     <button class="btn-copy" onclick="copyStorytelling()">Copiar Análisis</button>
                 </div>
-                <p id="currentProviderLabel" style="font-size: 12px; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 15px;"></p>
                 <div class="story-grid" id="storyContent"></div>
             </div>
         </div>
@@ -182,29 +131,28 @@
 </div>
 
 <div id="choferes" class="content-section">
-    <div class="app-header">
-        <div class="title-wrapper"><span>Ranking Individual</span><h1>Análisis de Choferes</h1></div>
-    </div>
+    <div class="app-header"><h1>Análisis de Choferes</h1></div>
     <div id="driverLayout" style="display: none;">
         <div class="main-layout" style="grid-template-columns: 1fr 1fr; margin-bottom: 25px;">
-            <div class="card"><div class="card-title" style="color: var(--success);">🏆 Top 5 Mejores (>= 250 Entregas)</div><table id="topBestTable"><thead><tr><th>Conductor</th><th>Total</th><th>Eficiencia</th></tr></thead><tbody></tbody></table></div>
-            <div class="card"><div class="card-title" style="color: var(--danger);">⚠️ Top 5 Críticos (Baja Eficiencia)</div><table id="topWorstTable"><thead><tr><th>Conductor</th><th>Total</th><th>Eficiencia</th></tr></thead><tbody></tbody></table></div>
+            <div class="card"><div class="card-header-dark" style="color: var(--success);">🏆 Top 5 Mejores</div><table id="topBestTable"><thead><tr><th>Conductor</th><th>Total</th><th>Efi</th></tr></thead><tbody></tbody></table></div>
+            <div class="card"><div class="card-header-dark" style="color: var(--danger);">⚠️ Top 5 Críticos</div><table id="topWorstTable"><thead><tr><th>Conductor</th><th>Total</th><th>Efi</th></tr></thead><tbody></tbody></table></div>
         </div>
         <div class="card">
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
-                <input type="text" class="search-box" id="driverSearch" placeholder="Filtrar chofer..." onkeyup="filterDrivers()">
-                <button class="btn-copy" onclick="copyDriverList()">Copiar Listado</button>
+            <div class="card-header-dark" style="margin-bottom:15px;">
+                <span>Listado General</span>
+                <button class="btn-copy" onclick="copyTable('driverTable')">Copiar Tabla</button>
             </div>
+            <input type="text" id="driverSearch" placeholder="Buscar chofer..." style="padding:12px; background:#1a1a1a; border:1px solid var(--border); color:#fff; border-radius:8px; width:100%; margin-bottom:15px;" oninput="filterDriversOptimized()">
             <div class="table-wrapper">
                 <table id="driverTable">
                     <thead>
                         <tr>
-                            <th onclick="handleSort('nombre', this)">Conductor</th>
-                            <th onclick="handleSort('e', this)">Entregado</th>
-                            <th onclick="handleSort('ne', this)">No Entregado</th>
-                            <th onclick="handleSort('tr', this)">TR2</th>
-                            <th onclick="handleSort('total', this)">Total</th>
-                            <th onclick="handleSort('efi', this)">Eficiencia</th>
+                            <th onclick="sortDriversOptimized('nombre')" style="width: 30%;">Conductor</th>
+                            <th onclick="sortDriversOptimized('e')">E</th>
+                            <th onclick="sortDriversOptimized('ne')">NE</th>
+                            <th onclick="sortDriversOptimized('tr')">TR2</th>
+                            <th onclick="sortDriversOptimized('total')">Total</th>
+                            <th onclick="sortDriversOptimized('efi')">Eficiencia</th>
                         </tr>
                     </thead>
                     <tbody id="driverTableBody"></tbody>
@@ -214,73 +162,165 @@
     </div>
 </div>
 
+<div id="malas-practicas" class="content-section">
+    <div class="app-header">
+        <div class="title-wrapper"><h1>Masivos Detectados</h1></div>
+        <div class="header-controls">
+            <select id="mp-filter-status" class="btn-upload-custom" style="background: #1a1a1a; color: #fff; border: 1px solid var(--border);" onchange="processMalasPracticas()">
+                <option value="Entregado">Entregado</option>
+                <option value="No Entrega">No Entrega</option>
+            </select>
+        </div>
+    </div>
+    <div id="mp-layout" class="hidden">
+        <div class="card" style="margin-bottom: 20px;"><div id="date-board" class="date-board"></div></div>
+        <div class="main-layout">
+            <div class="card">
+                <div class="card-header-dark">Top Conductores <button class="btn-copy" id="btn-copy-mp-list">Copiar Lista</button></div>
+                <div id="top-list-mp" class="scroll-area"></div>
+            </div>
+            <div class="card">
+                <div class="card-header-dark">
+                    <div style="display: flex; align-items: center;"><span id="selected-driver-display">Selecciona Conductor</span><span id="header-viaje-id" class="viaje-tag hidden"></span></div>
+                    <div style="display:flex; gap:10px;"><a href="#" id="btn-tracking-unigis" target="_blank" class="btn-tracking hidden">UNIGIS</a><button class="btn-copy btn-copy-purple hidden" id="btn-copy-sheets">Copiar para Sheets</button></div>
+                </div>
+                <div class="scroll-area">
+                    <div id="mp-placeholder" style="padding:40px; text-align:center; color:var(--text-dim);">Selecciona conductor y fecha.</div>
+                    <table id="mp-data-table" class="hidden"><thead><tr><th>Fecha</th><th>Hora</th><th>Paquete</th><th>Estado</th></tr></thead><tbody id="mp-table-body"></tbody></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    let globalRawData = [];
+    let rawData = [];
     let driversData = [];
+    let currentFilteredDrivers = [];
     let chartObj = null;
-    let sortConfig = { key: null, asc: true };
+    let analyzedRowsMP = [];
+    let driverDailyCountsMP = {};
+    let selectedDriverMP = null;
+    let selectedDateMP = null;
+    let currentSort = { key: null, asc: true };
 
     function openTab(id) {
         document.querySelectorAll('.content-section, .tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        event.currentTarget.classList.add('active');
     }
 
-    document.querySelector('.main-file-input').addEventListener('change', function(e) {
+    document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (evt) => {
             const data = new Uint8Array(evt.target.result);
-            const wb = XLSX.read(data, { type: 'array' });
-            globalRawData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            processDrivers(); 
+            const wb = XLSX.read(data, { type: 'array', cellDates: true });
+            rawData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
             applyFilter(); 
+            processMalasPracticas();
             document.getElementById('mainLayout').style.display = 'grid';
             document.getElementById('driverLayout').style.display = 'block';
+            document.getElementById('mp-layout').classList.remove('hidden');
         };
         reader.readAsArrayBuffer(file);
     });
 
     function applyFilter() {
         const val = document.getElementById('vehicleFilter').value;
-        const providerText = document.getElementById('vehicleFilter').options[document.getElementById('vehicleFilter').selectedIndex].text;
-        document.getElementById('currentProviderLabel').innerText = `Filtrado por: ${providerText}`;
-
-        const filtered = val === 'all' ? globalRawData : 
-                        val === 'GENQP001' ? globalRawData.filter(r => String(r['Vehiculo']) === 'GENQP001') :
-                        globalRawData.filter(r => String(r['Vehiculo']) !== 'GENQP001');
-        
+        const filtered = val === 'all' ? rawData : 
+                        val === 'GENQP001' ? rawData.filter(r => String(r['Vehiculo']) === 'GENQP001') :
+                        rawData.filter(r => String(r['Vehiculo']) !== 'GENQP001');
         processDrivers(filtered);
         renderGeneral(filtered);
+    }
+
+    function processDrivers(data) {
+        const map = new Map();
+        data.forEach(r => {
+            const name = r['Conductor'];
+            if (!name) return;
+            if (!map.has(name)) map.set(name, { nombre: name, e: 0, ne: 0, tr: 0 });
+            const item = map.get(name);
+            const d = (r['Descripcion'] || "").trim().toUpperCase();
+            if (d === 'ENTREGADO') item.e++; 
+            else if (d === 'NO ENTREGADO') item.ne++; 
+            else if (d === 'NO EMBARCADO TR2') item.tr++;
+        });
+        
+        driversData = Array.from(map.values()).map(d => {
+            const total = d.e + d.ne + d.tr;
+            return { ...d, total, efi: total > 0 ? (d.e / total * 100) : 0 };
+        });
+        
+        currentFilteredDrivers = [...driversData];
+        renderDriverTablesOptimized();
+    }
+
+    function renderDriverTablesOptimized() {
+        const tbody = document.getElementById('driverTableBody');
+        const rows = currentFilteredDrivers.map(d => `
+            <tr>
+                <td>${d.nombre}</td>
+                <td>${d.e}</td>
+                <td>${d.ne}</td>
+                <td>${d.tr}</td>
+                <td>${d.total}</td>
+                <td><span class="status-pill ${d.efi >= 98 ? 'bg-green' : 'bg-red'}">${d.efi.toFixed(1)}%</span></td>
+            </tr>`).join('');
+        
+        tbody.innerHTML = rows;
+
+        const best = [...driversData].filter(c => c.e >= 250).sort((a,b) => b.efi - a.efi).slice(0, 5);
+        const worst = [...driversData].filter(c => c.total > 0).sort((a,b) => a.efi - b.efi).slice(0, 5);
+        
+        document.getElementById('topBestTable').querySelector('tbody').innerHTML = best.map(d => `<tr><td>${d.nombre}</td><td>${d.total}</td><td><span class="status-pill ${d.efi >= 98 ? 'bg-green' : 'bg-red'}">${d.efi.toFixed(1)}%</span></td></tr>`).join('');
+        document.getElementById('topWorstTable').querySelector('tbody').innerHTML = worst.map(d => `<tr><td>${d.nombre}</td><td>${d.total}</td><td><span class="status-pill ${d.efi >= 98 ? 'bg-green' : 'bg-red'}">${d.efi.toFixed(1)}%</span></td></tr>`).join('');
+    }
+
+    function filterDriversOptimized() {
+        const q = document.getElementById('driverSearch').value.toUpperCase();
+        currentFilteredDrivers = q ? driversData.filter(d => d.nombre.toUpperCase().includes(q)) : [...driversData];
+        renderDriverTablesOptimized();
+    }
+
+    function sortDriversOptimized(key) {
+        if (currentSort.key === key) { currentSort.asc = !currentSort.asc; } 
+        else { currentSort.key = key; currentSort.asc = false; }
+
+        currentFilteredDrivers.sort((a, b) => {
+            let valA = a[key], valB = b[key];
+            if (typeof valA === 'string') return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            return currentSort.asc ? valA - valB : valB - valA;
+        });
+        renderDriverTablesOptimized();
     }
 
     function renderGeneral(data) {
         const res = {};
         data.forEach(r => {
-            let f = r['Fecha Jornada'] ? r['Fecha Jornada'].toString().split(' ')[0] : 'S/F';
+            let f = r['Fecha Jornada'] ? (r['Fecha Jornada'] instanceof Date ? r['Fecha Jornada'].toLocaleDateString() : String(r['Fecha Jornada']).split(' ')[0]) : 'S/F';
             if (!res[f]) res[f] = { e: 0, ne: 0, tr2: 0 };
             const d = (r['Descripcion'] || "").trim().toUpperCase();
             if (d === "ENTREGADO") res[f].e++;
             else if (d === "NO ENTREGADO") res[f].ne++;
             else if (d === "NO EMBARCADO TR2") res[f].tr2++;
         });
-
         const dates = Object.keys(res).sort();
         const tbody = document.getElementById('kpiTableBody');
         tbody.innerHTML = '';
         const cData = { labels: [], efi: [], vis: [] };
-
         dates.forEach(f => {
             const row = res[f];
             const tot = row.e + row.ne + row.tr2;
             const vPerc = tot > 0 ? (((row.e + row.ne) / tot) * 100) : 0;
             const ePerc = tot > 0 ? ((row.e / tot) * 100) : 0;
-            
             cData.labels.push(f);
-            cData.vis.push(vPerc.toFixed(2));
-            cData.efi.push(ePerc.toFixed(2));
+            cData.vis.push(vPerc.toFixed(1));
+            cData.efi.push(ePerc.toFixed(1));
             
+            // Visualización optimizada: no hay recortes con el nuevo CSS
             tbody.innerHTML += `
                 <tr>
                     <td>${f}</td>
@@ -295,81 +335,6 @@
         updateStorytelling(cData);
     }
 
-    function handleSort(key, el) {
-        // Alternar dirección si es la misma columna
-        if (sortConfig.key === key) {
-            sortConfig.asc = !sortConfig.asc;
-        } else {
-            sortConfig.key = key;
-            sortConfig.asc = true;
-        }
-
-        // Actualizar UI de encabezados
-        document.querySelectorAll('th').forEach(th => th.className = '');
-        el.className = sortConfig.asc ? 'sort-asc' : 'sort-desc';
-
-        // Ordenar array en memoria (instantáneo)
-        driversData.sort((a, b) => {
-            let valA = a[key];
-            let valB = b[key];
-            
-            if (typeof valA === 'string') {
-                return sortConfig.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            } else {
-                return sortConfig.asc ? valA - valB : valB - valA;
-            }
-        });
-
-        renderDriverListOnly();
-    }
-
-    function renderDriverListOnly() {
-        const body = document.getElementById('driverTableBody');
-        body.innerHTML = driversData.map(d => `
-            <tr>
-                <td>${d.nombre}</td>
-                <td>${d.e}</td>
-                <td>${d.ne}</td>
-                <td>${d.tr}</td>
-                <td>${d.total}</td>
-                <td><span class="status-pill ${d.efi >= 98 ? 'bg-green' : 'bg-red'}">${d.efi.toFixed(2)}%</span></td>
-            </tr>`).join('');
-        filterDrivers(); // Mantener el filtro de búsqueda si existe
-    }
-
-    function processDrivers(dataToProcess = globalRawData) {
-        const map = new Map();
-        dataToProcess.forEach(r => {
-            const name = r['Conductor'];
-            if (!name) return;
-            if (!map.has(name)) map.set(name, { nombre: name, e: 0, ne: 0, tr: 0 });
-            const item = map.get(name);
-            const d = (r['Descripcion'] || "").trim().toUpperCase();
-            if (d === 'ENTREGADO') item.e++; 
-            else if (d === 'NO ENTREGADO') item.ne++; 
-            else if (d === 'NO EMBARCADO TR2') item.tr++;
-        });
-        driversData = Array.from(map.values()).map(d => {
-            const total = d.e + d.ne + d.tr;
-            return { ...d, total, efi: total > 0 ? (d.e / total * 100) : 0 };
-        });
-        renderDriverTables();
-    }
-
-    function renderDriverTables() {
-        renderDriverListOnly();
-        const best = driversData.filter(c => c.e >= 250).sort((a,b) => b.efi - a.efi).slice(0, 5);
-        const worst = driversData.filter(c => c.total > 0).sort((a,b) => a.efi - b.efi).slice(0, 5);
-        document.getElementById('topBestTable').querySelector('tbody').innerHTML = best.map(d => `<tr><td>${d.nombre}</td><td>${d.total}</td><td class="${d.efi >= 98 ? 'bg-green' : 'bg-red'}">${d.efi.toFixed(2)}%</td></tr>`).join('');
-        document.getElementById('topWorstTable').querySelector('tbody').innerHTML = worst.map(d => `<tr><td>${d.nombre}</td><td>${d.total}</td><td class="${d.efi >= 98 ? 'bg-green' : 'bg-red'}">${d.efi.toFixed(2)}%</td></tr>`).join('');
-    }
-
-    function filterDrivers() {
-        const q = document.getElementById('driverSearch').value.toUpperCase();
-        const rows = document.getElementById('driverTableBody').getElementsByTagName('tr');
-        for (let r of rows) r.style.display = r.cells[0].innerText.toUpperCase().includes(q) ? "" : "none";
-    }
-
     function updateStorytelling(data) {
         const totalDays = data.labels.length;
         if (totalDays === 0) return;
@@ -377,26 +342,17 @@
         const avgVis = (data.vis.reduce((a, b) => Number(a) + Number(b), 0) / totalDays).toFixed(2);
         const dMetaEfi = data.efi.filter(v => Number(v) >= 98).length;
         const dMetaVis = data.vis.filter(v => Number(v) >= 98).length;
+        const datesNoMeta = [];
+        data.labels.forEach((label, idx) => { if (Number(data.efi[idx]) < 98) datesNoMeta.push(label); });
+
         const worst = [...driversData].filter(d => d.total >= 5).sort((a, b) => a.efi - b.efi).slice(0, 3);
         let dList = worst.length > 0 ? worst.map(d => `• <strong>${d.nombre}</strong>: <span class="highlight-danger">${d.ne + d.tr} fallidos</span> (${d.efi.toFixed(1)}%)`).join('<br>') : "Sin críticos.";
+        let metaTxt = datesNoMeta.length > 0 ? `<br>No cumplido: ${datesNoMeta.join(', ')}` : " ¡Meta cumplida todos los días!";
+
         document.getElementById('storyContent').innerHTML = `
-            <div class="story-item"><div><h4>Efectividad</h4><p>Visita: <span class="${avgVis >= 98 ? 'highlight-success' : 'highlight-danger'}">${avgVis}%</span> (${dMetaVis}/${totalDays})</p><p>Entrega: <span class="${avgEfi >= 98 ? 'highlight-success' : 'highlight-danger'}">${avgEfi}%</span> (${dMetaEfi}/${totalDays})</p></div></div>
-            <div class="story-item critical"><div><h4>⚠️ Críticos</h4><p style="font-size: 11px;">${dList}</p></div></div>
-            <div class="story-item warning"><div><h4>📉 Acción</h4><p>Priorizar gestión de TR2 para evitar penalización de Visita.</p></div></div>`;
-    }
-
-    function copyStorytelling() {
-        const provider = document.getElementById('currentProviderLabel').innerText;
-        const items = document.querySelectorAll('.story-item');
-        let text = `📊 ANALISIS OPERATIVO\n${provider}\n\n`;
-        items.forEach(item => { text += `🔹 ${item.querySelector('h4').innerText}\n${item.innerText.replace(item.querySelector('h4').innerText, '').trim()}\n\n`; });
-        navigator.clipboard.writeText(text).then(() => alert("¡Copiado!"));
-    }
-
-    function copyDriverList() {
-        let text = `📋 LISTADO CONDUCTORES\n`;
-        driversData.forEach(d => { if(d.total > 0) text += `${d.nombre} | Efi: ${d.efi.toFixed(1)}% | Tot: ${d.total}\n`; });
-        navigator.clipboard.writeText(text).then(() => alert("¡Copiado!"));
+            <div class="story-item"><h4>EFECTIVIDAD</h4><p>Visita: <span class="${avgVis >= 98 ? 'highlight-success' : 'highlight-danger'}">${avgVis}%</span> (${dMetaVis}/${totalDays})</p><p>Entrega: <span class="${avgEfi >= 98 ? 'highlight-success' : 'highlight-danger'}">${avgEfi}%</span> (${dMetaEfi}/${totalDays})</p><p style="font-size:10px; color:var(--danger);">${metaTxt}</p></div>
+            <div class="story-item critical"><h4>⚠️ CRÍTICOS</h4><p style="font-size: 11px;">${dList}</p></div>
+            <div class="story-item warning"><h4>📉 ACCIÓN</h4><p>Priorizar gestión de TR2 para evitar penalización de Visita.</p></div>`;
     }
 
     function initChart(data) {
@@ -407,12 +363,149 @@
             data: {
                 labels: data.labels,
                 datasets: [
-                    { label: '% Efi.', data: data.efi, borderColor: '#4fc3f7', pointBackgroundColor: data.efi.map(v => v < 98 ? '#ff5252' : '#4fc3f7'), fill: true, tension: 0.3, backgroundColor: 'rgba(79, 195, 247, 0.1)' },
+                    { label: '% Efi.', data: data.efi, borderColor: '#4fc3f7', backgroundColor: 'rgba(79, 195, 247, 0.1)', fill: true, tension: 0.3 },
                     { label: '% Vis.', data: data.vis, borderColor: '#ffb74d', borderDash: [5, 5], tension: 0.3 }
                 ]
             },
-            options: { maintainAspectRatio: false, scales: { y: { min: 60, max: 100, grid: { color: '#222' }, ticks: { color: '#888' } }, x: { ticks: { color: '#888' } } }, plugins: { legend: { labels: { color: '#fff' } } } }
+            options: { 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { min: 60, max: 100, grid: { color: '#2d2d2d' }, ticks: { color: '#888' } }, 
+                    x: { ticks: { color: '#888' } } 
+                }, 
+                plugins: { 
+                    legend: { labels: { color: '#fff' } },
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line', yMin: 98, yMax: 98, borderColor: 'red', borderWidth: 2,
+                                label: { display: true, content: 'Cumplimiento Amazon (98%)', position: 'end', backgroundColor: 'rgba(255,0,0,0.8)', color: '#fff', font: { size: 10 } }
+                            }
+                        }
+                    }
+                } 
+            }
         });
+    }
+
+    function processMalasPracticas() {
+        const statusFilter = document.getElementById('mp-filter-status').value;
+        let filtered = rawData.filter(row => {
+            const driver = String(row.Conductor || "").toUpperCase();
+            const desc = String(row.Descripcion || "").trim();
+            const matchStatus = statusFilter === "No Entrega" ? desc.includes("No Entrega") : desc === "Entregado";
+            return !driver.includes("CONDUCTOR QP") && matchStatus;
+        });
+
+        filtered.sort((a, b) => {
+            if (a.Conductor !== b.Conductor) return String(a.Conductor).localeCompare(String(b.Conductor));
+            const f1 = new Date(a["Fecha Jornada"]).getTime();
+            const f2 = new Date(b["Fecha Jornada"]).getTime();
+            if (f1 !== f2) return f1 - f2;
+            return parseSeconds(a["Hora Estado"]) - parseSeconds(b["Hora Estado"]);
+        });
+
+        const preAnalisis = filtered.map((row, i) => {
+            let isMasiva = false;
+            const prev = filtered[i-1];
+            if (prev && row.Conductor === prev.Conductor && String(row["Fecha Jornada"]) === String(prev["Fecha Jornada"])) {
+                const diff = parseSeconds(row["Hora Estado"]) - parseSeconds(prev["Hora Estado"]);
+                if (diff >= 0 && diff < 120) isMasiva = true;
+            }
+            const fecha = row["Fecha Jornada"] instanceof Date ? row["Fecha Jornada"].toLocaleDateString() : String(row["Fecha Jornada"]).split(' ')[0];
+            return { ...row, isMasiva, fechaSimple: fecha };
+        });
+
+        const dailyStats = {};
+        preAnalisis.forEach(row => { if (row.isMasiva) { const key = `${row.Conductor}|${row.fechaSimple}`; dailyStats[key] = (dailyStats[key] || 0) + 1; } });
+
+        const finalStats = {};
+        driverDailyCountsMP = {};
+        analyzedRowsMP = preAnalisis.map(row => {
+            const key = `${row.Conductor}|${row.fechaSimple}`;
+            const isValid = row.isMasiva && dailyStats[key] >= 4;
+            if (isValid) {
+                finalStats[row.Conductor] = (finalStats[row.Conductor] || 0) + 1;
+                if (!driverDailyCountsMP[row.Conductor]) driverDailyCountsMP[row.Conductor] = {};
+                driverDailyCountsMP[row.Conductor][row.fechaSimple] = dailyStats[key];
+            }
+            return { ...row, isMasiva: isValid };
+        });
+
+        const top = Object.entries(finalStats).filter(e => e[1] >= 30).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        renderMPTopList(top);
+    }
+
+    function renderMPTopList(top) {
+        const list = document.getElementById('top-list-mp');
+        list.innerHTML = top.length ? '' : '<p style="padding:20px; color:#888;">Sin hallazgos.</p>';
+        top.forEach(([name, count]) => {
+            const div = document.createElement('div');
+            div.className = 'driver-item';
+            div.innerHTML = `<span>${name}</span> <span class="total-badge" style="background:var(--danger); color:#fff; padding:2px 8px; border-radius:10px; font-size:11px;">${count}</span>`;
+            div.onclick = () => {
+                document.querySelectorAll('#top-list-mp .driver-item').forEach(el => el.classList.remove('active'));
+                div.classList.add('active');
+                selectedDriverMP = name;
+                selectedDateMP = null;
+                showDatesForMP(name);
+                updateMPTable();
+            };
+            list.appendChild(div);
+        });
+    }
+
+    function showDatesForMP(name) {
+        const board = document.getElementById('date-board');
+        const datesObj = driverDailyCountsMP[name] || {};
+        board.innerHTML = '';
+        Object.entries(datesObj).sort((a,b) => b[1]-a[1]).forEach(([date, count]) => {
+            const btn = document.createElement('button');
+            btn.className = 'date-btn';
+            btn.innerHTML = `${date} <b>(${count})</b>`;
+            btn.onclick = () => {
+                document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+                selectedDateMP = date;
+                btn.classList.add('active');
+                updateMPTable();
+            };
+            board.appendChild(btn);
+        });
+    }
+
+    function updateMPTable() {
+        if (!selectedDriverMP) return;
+        document.getElementById('selected-driver-display').innerText = selectedDriverMP;
+        document.getElementById('mp-placeholder').classList.add('hidden');
+        document.getElementById('mp-data-table').classList.remove('hidden');
+        document.getElementById('btn-copy-sheets').classList.remove('hidden');
+        
+        const viajeIdTag = document.getElementById('header-viaje-id');
+        const btnT = document.getElementById('btn-tracking-unigis');
+        const tbody = document.getElementById('mp-table-body');
+        tbody.innerHTML = '';
+
+        const dataSubset = analyzedRowsMP.filter(r => r.Conductor === selectedDriverMP && r.isMasiva && (!selectedDateMP || r.fechaSimple === selectedDateMP));
+
+        if (selectedDateMP && dataSubset.length > 0) {
+            viajeIdTag.innerText = `VIAJE: ${dataSubset[0]["Id Viaje"]}`;
+            viajeIdTag.classList.remove('hidden');
+            btnT.classList.remove('hidden');
+            btnT.href = `https://redpack.unigis.com/tracking/shipment/Index?Id=${dataSubset[0]["Id Viaje"]}`;
+        }
+
+        dataSubset.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${row.fechaSimple}</td><td>${row["Hora Estado"]}</td><td>${row.Paquete}</td><td>${row.Descripcion}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function parseSeconds(val) {
+        if (!val) return 0;
+        if (typeof val === 'number') return Math.round(val * 86400);
+        const p = val.toString().split(':');
+        return p.length >= 2 ? (parseInt(p[0]) * 3600) + (parseInt(p[1]) * 60) + (parseInt(p[2]) || 0) : 0;
     }
 
     function copyTable(id) {
@@ -422,8 +515,21 @@
         window.getSelection().removeAllRanges();
         window.getSelection().addRange(range);
         document.execCommand("copy");
-        alert("¡Tabla copiada!");
+        window.getSelection().removeAllRanges();
+        alert("Tabla copiada.");
     }
+
+    function copyStorytelling() {
+        const content = document.getElementById('storyContent').innerText;
+        navigator.clipboard.writeText(content).then(() => alert("Análisis copiado."));
+    }
+
+    document.getElementById('btn-copy-sheets').onclick = () => {
+        const tbody = document.getElementById('mp-table-body');
+        let txt = "Fecha\tHora\tPaquete\tEstado\n";
+        Array.from(tbody.rows).forEach(r => { txt += Array.from(r.cells).map(c => c.innerText).join('\t') + '\n'; });
+        navigator.clipboard.writeText(txt).then(() => alert("Copiado para Sheets"));
+    };
 </script>
 </body>
 </html>
